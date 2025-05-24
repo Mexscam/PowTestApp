@@ -1,8 +1,9 @@
+
 import { Button } from "@/components/ui/button";
 import { PageWrapper } from "@/components/shared/PageWrapper";
 import { AppLogo } from "@/components/shared/AppLogo";
 import Link from "next/link";
-import { LogIn, UserPlus, Cpu } from "lucide-react";
+import { LogIn, UserPlus, Cpu, Info } from "lucide-react";
 
 export default function HomePage() {
   return (
@@ -30,13 +31,13 @@ export default function HomePage() {
           <p className="text-sm text-muted-foreground">Create your account and become part of the Nexus.</p>
         </div>
         <div className="frosted-glass p-6 rounded-lg text-left">
-          <LogIn className="w-10 h-10 text-accent mb-3" />
-          <h3 className="text-xl font-semibold mb-2 text-glow-accent">Track Your Progress</h3>
-          <p className="text-sm text-muted-foreground">Monitor your stats on your personal dashboard.</p>
+          <Info className="w-10 h-10 text-accent mb-3" />
+          <h3 className="text-xl font-semibold mb-2 text-glow-accent">Discover More</h3>
+          <p className="text-sm text-muted-foreground">Learn about the project features and vision.</p>
         </div>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex flex-wrap justify-center gap-4">
         <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground text-glow-primary shadow-[0_0_15px_theme(colors.primary)]">
           <Link href="/login">
             <LogIn className="mr-2 h-5 w-5" /> Login
@@ -45,6 +46,11 @@ export default function HomePage() {
         <Button asChild variant="secondary" size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground text-glow-accent shadow-[0_0_15px_theme(colors.accent)]">
           <Link href="/register">
             <UserPlus className="mr-2 h-5 w-5" /> Register
+          </Link>
+        </Button>
+         <Button asChild variant="outline" size="lg" className="border-primary text-primary hover:bg-primary/10 hover:text-primary/90 text-glow-primary shadow-[0_0_10px_theme(colors.primary)]">
+          <Link href="/project-details">
+            <Info className="mr-2 h-5 w-5" /> Learn More
           </Link>
         </Button>
       </div>
