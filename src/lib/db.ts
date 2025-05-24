@@ -80,7 +80,7 @@ export async function getDbConnection() {
 async function seedInitialUsers(currentDb: Database<sqlite3.Database, sqlite3.Statement>) {
   const usersToSeed = [
     {
-      id: 'user1', // Predefined ID for consistent mocking
+      id: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d', // Valid UUID for CypherUser
       username: 'CypherUser',
       email: 'user@nexus.io',
       password: 'password123',
@@ -88,7 +88,7 @@ async function seedInitialUsers(currentDb: Database<sqlite3.Database, sqlite3.St
       level: 7,
     },
     {
-      id: 'admin1', // Predefined ID
+      id: 'd6c5b4a3-f2e1-d0c9-b8a7-9f8e7d6c5b4a', // Valid UUID for Admin1
       username: 'Admin1',
       email: 'admin@nexus.io',
       password: 'Gabriel8',
@@ -137,3 +137,4 @@ export async function mapDbUserToSafeUser(dbUser: any): Promise<Omit<User, 'pass
         updatedAt: new Date(safeUserFields.updatedAt),
     };
 }
+

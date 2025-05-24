@@ -15,7 +15,7 @@ import type { ChatMessage } from "@/lib/types";
 import { formatDistanceToNowStrict } from 'date-fns';
 
 
-const MOCKED_CURRENT_USER_ID = "user1"; // Corresponds to CypherUser in seed data
+const MOCKED_CURRENT_USER_ID = "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"; // Corresponds to CypherUser (valid UUID)
 const MOCKED_CURRENT_USERNAME = "CypherUser"; // For display consistency until real auth context
 
 export default function ChatPage() {
