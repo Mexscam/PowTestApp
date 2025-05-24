@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -5,6 +6,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import React from "react"; // Import React for useState
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,10 +19,11 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Loader2 } from "lucide-react";
+import { registerUser } from "@/app/actions/auth"; // Import server action
 
 const formSchema = z.object({
-  username: z.string().min(3, { message: "Username must be at least 3 characters." }),
+  username: z.string().min(3, { message: "Username must be at least 3 characters." }).max(20, { message: "Username must be 20 characters or less."}),
   email: z.string().email({ message: "Invalid email address." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
 });
@@ -28,6 +31,7 @@ const formSchema = z.object({
 export function RegisterForm() {
   const router = useRouter();
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -38,20 +42,39 @@ export function RegisterForm() {
     },
   });
 
-  // Mock registration function
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log("Registration attempt:", values);
-    // Simulate API call
-    toast({
-      title: "Registration Simulated",
-      description: "Account created successfully! Redirecting to login...",
-      variant: "default",
-    });
-    // In a real app, you'd handle registration here
-    // For now, just redirect to login
-    setTimeout(() => {
-      router.push('/login');
-    }, 1500);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSubmitting(true);
+    const formData = new FormData();
+    formData.append('username', values.username);
+    formData.append('email', values.email);
+    formData.append('password', values.password);
+
+    try {
+      const result = await registerUser(formData);
+      if (result.success) {
+        toast({
+          title: "Registration Successful",
+          description: result.message || "Account created! Please log in.",
+          variant: "default",
+        });
+        router.push('/login'); // Redirect to login after successful registration
+      } else {
+        toast({
+          title: "Registration Failed",
+          description: result.message || "An error occurred.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      toast({
+        title: "Registration Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -68,6 +91,7 @@ export function RegisterForm() {
                   placeholder="cypher_punk" 
                   {...field} 
                   className="bg-input/50 border-border/70 focus:bg-input focus:border-primary"
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormMessage />
@@ -86,6 +110,7 @@ export function RegisterForm() {
                   placeholder="user@nexus.io" 
                   {...field} 
                   className="bg-input/50 border-border/70 focus:bg-input focus:border-primary"
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormMessage />
@@ -104,14 +129,24 @@ export function RegisterForm() {
                   placeholder="••••••••" 
                   {...field} 
                   className="bg-input/50 border-border/70 focus:bg-input focus:border-primary"
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full bg-accent hover:bg-accent/80 text-accent-foreground text-glow-accent shadow-[0_0_10px_theme(colors.accent)]">
-          <UserPlus className="mr-2 h-5 w-5" /> Create Account
+        <Button 
+          type="submit" 
+          className="w-full bg-accent hover:bg-accent/80 text-accent-foreground text-glow-accent shadow-[0_0_10px_theme(colors.accent)]"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+          ) : (
+            <UserPlus className="mr-2 h-5 w-5" />
+          )}
+          Create Account
         </Button>
         <div className="text-center text-sm">
           <span className="text-muted-foreground">Already have an account? </span>

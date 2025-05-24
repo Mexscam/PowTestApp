@@ -1,28 +1,78 @@
+
 import { PageWrapper } from "@/components/shared/PageWrapper";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { PowTaskItem, type PoWTask } from "@/components/dashboard/PowTaskItem";
+import { PowTaskItem } from "@/components/dashboard/PowTaskItem";
+import type { PoWTask } from "@/lib/types"; // Updated import
 import { Cpu, Zap, Target, ListChecks, Activity } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
-// Mock data - in a real app, this would be fetched
+// Mock data - in a real app, this would be fetched from a database
 const mockUserStats = {
+  id: "user1", // Added from User type
+  username: "CypherUser",
   points: 12500,
-  difficulty: 7,
-  hashesResolved: 782391,
-  activeMiners: 42, // Example additional stat
+  level: 7, // Added from User type
+  difficultyContribution: 7, // Renamed for clarity, represents user's typical mining difficulty
+  hashesResolvedAllTime: 782391, // More descriptive
+  activeMinersInShard: 42, 
 };
 
 const mockPowTasks: PoWTask[] = [
-  { id: 'task1', name: 'Alpha Block Verification', description: 'Verify transaction batch #A4F2 using SHA-256 variant.', reward: 100, difficultyTarget: '000xxx...', status: 'available' },
-  { id: 'task2', name: 'Sigma Data Chain', description: 'Mine the next link in the Sigma data integrity chain. Requires Scrypt algorithm.', reward: 250, difficultyTarget: '0000xx...', status: 'in_progress' },
-  { id: 'task3', name: 'Genesis Contract Audit', description: 'Perform computational audit on Genesis smart contract parameters. Ethash variant.', reward: 50, difficultyTarget: '00xxxx...', status: 'completed' },
-  { id: 'task4', name: 'Quantum Resilience Test', description: 'Stress test network with quantum-resistant hash functions.', reward: 500, difficultyTarget: '00000x...', status: 'available' },
+  { 
+    id: 'task1', 
+    name: 'Alpha Block Verification', 
+    description: 'Verify transaction batch #A4F2 using SHA-256 variant.', 
+    reward: 100, 
+    difficulty: 3, // Numerical difficulty
+    targetHashPrefix: '000xxx...', 
+    dataToHash: 'alpha_block_A4F2_data_payload', // Example data
+    status: 'available',
+    createdAt: new Date(Date.now() - 3600000 * 2) // 2 hours ago
+  },
+  { 
+    id: 'task2', 
+    name: 'Sigma Data Chain', 
+    description: 'Mine the next link in the Sigma data integrity chain. Requires Scrypt algorithm (simulated as SHA-256).', 
+    reward: 250, 
+    difficulty: 4, // Numerical difficulty
+    targetHashPrefix: '0000xx...',
+    dataToHash: 'sigma_chain_link_integrity_check_v3',
+    status: 'in_progress', // Could be assigned to current user
+    assignedTo: mockUserStats.id,
+    createdAt: new Date(Date.now() - 3600000 * 1) // 1 hour ago
+  },
+  { 
+    id: 'task3', 
+    name: 'Genesis Contract Audit', 
+    description: 'Perform computational audit on Genesis smart contract parameters. Ethash variant (simulated as SHA-256).', 
+    reward: 50, 
+    difficulty: 2, // Numerical difficulty
+    targetHashPrefix: '00xxxx...',
+    dataToHash: 'genesis_contract_audit_params_secure_hash',
+    status: 'completed',
+    completedBy: mockUserStats.id,
+    solutionNonce: "12345",
+    timeToSolve: 120, // seconds
+    createdAt: new Date(Date.now() - 3600000 * 5) // 5 hours ago
+  },
+  { 
+    id: 'task4', 
+    name: 'Quantum Resilience Test', 
+    description: 'Stress test network with quantum-resistant hash functions (simulated as SHA-256).', 
+    reward: 500, 
+    difficulty: 5, // Numerical difficulty. Note: 5 can be very slow for JS SHA256.
+    targetHashPrefix: '00000x...',
+    dataToHash: 'quantum_test_data_high_entropy_stream',
+    status: 'available',
+    createdAt: new Date(Date.now() - 3600000 * 0.5) // 30 mins ago
+  },
 ];
 
-// Mock user data
-const userName = "CypherUser";
 
 export default function DashboardPage() {
+  // In a real app, userName would come from session/auth context
+  const userName = mockUserStats.username;
+
   return (
     <PageWrapper className="space-y-8">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -39,26 +89,26 @@ export default function DashboardPage() {
           title="Total Points" 
           value={mockUserStats.points.toLocaleString()} 
           icon={Zap} 
-          description="+20% this month"
+          description={`Level ${mockUserStats.level}`}
           iconColorClass="text-yellow-400"
         />
         <StatCard 
-          title="Current Difficulty" 
-          value={mockUserStats.difficulty} 
+          title="Typical Difficulty" 
+          value={mockUserStats.difficultyContribution} 
           icon={Target} 
-          description="Network Average: 6.5"
+          description="Network Avg: 6.5" // This would be dynamic
           iconColorClass="text-red-400"
         />
         <StatCard 
-          title="Hashes Resolved" 
-          value={mockUserStats.hashesResolved.toLocaleString()} 
+          title="Hashes Resolved (All Time)" 
+          value={mockUserStats.hashesResolvedAllTime.toLocaleString()} 
           icon={Cpu} 
-          description="Session Peak: 1.2M H/s"
+          description="Session Peak: 1.2M H/s" // This would be dynamic
           iconColorClass="text-blue-400"
         />
          <StatCard 
-          title="Active Miners" 
-          value={mockUserStats.activeMiners} 
+          title="Active Miners (Shard)" 
+          value={mockUserStats.activeMinersInShard} 
           icon={Activity} 
           description="On this shard"
           iconColorClass="text-green-400"
@@ -72,10 +122,13 @@ export default function DashboardPage() {
           <ListChecks className="h-7 w-7 text-accent mr-3" />
           <h2 className="text-2xl font-semibold text-glow-accent">Available Proof-of-Work Tasks</h2>
         </div>
-        {mockPowTasks.length > 0 ? (
+        {mockPowTasks.filter(task => task.status === 'available' || (task.status === 'in_progress' && task.assignedTo === mockUserStats.id)).length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {mockPowTasks.map((task) => (
-              <PowTaskItem key={task.id} task={task} />
+            {mockPowTasks
+              .filter(task => task.status === 'available' || (task.status === 'in_progress' && task.assignedTo === mockUserStats.id))
+              .map((task) => (
+              // Pass the current user ID for context, though it's mocked here
+              <PowTaskItem key={task.id} task={task} currentUserId={mockUserStats.id} />
             ))}
           </div>
         ) : (

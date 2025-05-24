@@ -1,10 +1,12 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import Link from 'next/link';
-import { useRouter } from 'next/navigation'; // Use next/navigation for App Router
+import { useRouter } from 'next/navigation';
+import React from "react"; // Import React for useState
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +19,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { LogIn, Send } from "lucide-react";
+import { LogIn, Loader2 } from "lucide-react";
+import { loginUser } from "@/app/actions/auth"; // Import server action
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -27,6 +30,7 @@ const formSchema = z.object({
 export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -36,20 +40,40 @@ export function LoginForm() {
     },
   });
 
-  // Mock login function
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log("Login attempt:", values);
-    // Simulate API call
-    toast({
-      title: "Login Simulated",
-      description: "Redirecting to dashboard...",
-      variant: "default",
-    });
-    // In a real app, you'd handle authentication here
-    // For now, just redirect to dashboard
-    setTimeout(() => {
-      router.push('/dashboard');
-    }, 1000);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSubmitting(true);
+    const formData = new FormData();
+    formData.append('email', values.email);
+    formData.append('password', values.password);
+
+    try {
+      const result = await loginUser(formData);
+      if (result.success) {
+        toast({
+          title: "Login Successful",
+          description: result.message || "Redirecting to dashboard...",
+          variant: "default",
+        });
+        // In a real app, auth state (e.g., JWT in context/cookie) would be set here.
+        // For now, just redirect.
+        router.push('/dashboard');
+      } else {
+        toast({
+          title: "Login Failed",
+          description: result.message || "An error occurred.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      toast({
+        title: "Login Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -67,6 +91,7 @@ export function LoginForm() {
                   placeholder="user@nexus.io" 
                   {...field} 
                   className="bg-input/50 border-border/70 focus:bg-input focus:border-primary"
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormMessage />
@@ -85,14 +110,24 @@ export function LoginForm() {
                   placeholder="••••••••" 
                   {...field} 
                   className="bg-input/50 border-border/70 focus:bg-input focus:border-primary"
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full bg-primary hover:bg-primary/80 text-primary-foreground text-glow-primary shadow-[0_0_10px_theme(colors.primary)]">
-          <LogIn className="mr-2 h-5 w-5" /> Secure Login
+        <Button 
+          type="submit" 
+          className="w-full bg-primary hover:bg-primary/80 text-primary-foreground text-glow-primary shadow-[0_0_10px_theme(colors.primary)]"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+          ) : (
+            <LogIn className="mr-2 h-5 w-5" />
+          )}
+          Secure Login
         </Button>
         <div className="text-center text-sm">
           <span className="text-muted-foreground">Don't have an account? </span>
