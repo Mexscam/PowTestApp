@@ -2,11 +2,12 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation'; // Import for router.refresh()
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Zap, CheckCircle, AlertTriangle, Hammer, Loader2, Play, StopCircle } from "lucide-react";
-import { Progress } from "@/components/ui/progress"; // For visual progress
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import type { PoWTask, MiningProgress, MiningResult as ClientMiningResult } from "@/lib/types";
 import { startMiningSimulation } from "@/lib/pow-miner";
@@ -14,11 +15,12 @@ import { submitPowResult } from '@/app/actions/mining';
 
 interface PowTaskItemProps {
   task: PoWTask;
-  currentUserId: string; // To simulate operations for a specific user
+  currentUserId: string;
 }
 
 export function PowTaskItem({ task, currentUserId }: PowTaskItemProps) {
   const { toast } = useToast();
+  const router = useRouter(); // Initialize router
   const [isMining, setIsMining] = useState(false);
   const [currentTaskStatus, setCurrentTaskStatus] = useState(task.status);
   const [miningProgress, setMiningProgress] = useState<MiningProgress | null>(null);
@@ -27,7 +29,7 @@ export function PowTaskItem({ task, currentUserId }: PowTaskItemProps) {
   useEffect(() => {
     setCurrentTaskStatus(task.status);
     if (task.status !== 'in_progress') {
-      setIsMining(false); // Reset mining state if task status changes externally
+      setIsMining(false); 
       setMiningProgress(null);
     }
   }, [task.status]);
@@ -57,7 +59,7 @@ export function PowTaskItem({ task, currentUserId }: PowTaskItemProps) {
     if (isMining || currentTaskStatus !== 'available') return;
 
     setIsMining(true);
-    setCurrentTaskStatus('in_progress'); // Optimistically update status
+    setCurrentTaskStatus('in_progress');
     setMiningProgress({
       attempts: 0, elapsedTime: 0, hashesPerSecond: 0, lastHashChecked: "Starting...",
       statusMessage: "Initializing miner..."
@@ -73,7 +75,7 @@ export function PowTaskItem({ task, currentUserId }: PowTaskItemProps) {
       (progress) => {
         setMiningProgress(progress);
       },
-      async (clientResult: ClientMiningResult) => { // Solution found by client
+      async (clientResult: ClientMiningResult) => { 
         setIsMining(false);
         setMiningProgress(prev => prev ? {...prev, statusMessage: `Solution found! Hash: ${clientResult.finalHash.substring(0,10)}... Verifying...`} : null);
         
@@ -83,25 +85,24 @@ export function PowTaskItem({ task, currentUserId }: PowTaskItemProps) {
           setCurrentTaskStatus('completed');
           toast({
             title: "Mining Success!",
-            description: `${serverResponse.message} Hash: ${clientResult.finalHash.substring(0,10)}...`,
+            description: `${serverResponse.message} Hash: ${clientResult.finalHash.substring(0,10)}... Points: +${serverResponse.pointsAwarded}`,
             variant: "default",
           });
-          // TODO: Update user points globally if possible
+          // Refresh dashboard data to update points and other stats
+          router.refresh(); 
         } else {
-          setCurrentTaskStatus('failed'); // Or back to 'available' if retryable
+          setCurrentTaskStatus('failed'); 
           toast({
             title: "Verification Failed",
             description: serverResponse.message || "The submitted hash was not valid.",
             variant: "destructive",
           });
         }
-        if (stopMiningFunc) stopMiningFunc(); // Ensure any ongoing process is stopped
+        if (stopMiningFunc) stopMiningFunc();
         setStopMiningFunc(null);
       },
-      (error: Error) => { // Mining failed or cancelled on client
+      (error: Error) => { 
         setIsMining(false);
-        // Only revert to 'available' if it wasn't a cancellation of an already 'in_progress' task.
-        // If it was cancelled, it should remain 'in_progress' or be explicitly handled.
         if (currentTaskStatus === 'in_progress' && !error.message.includes("cancelled")) {
            setCurrentTaskStatus('failed'); 
         } else if (currentTaskStatus !== 'completed' && currentTaskStatus !== 'failed') {
@@ -117,13 +118,12 @@ export function PowTaskItem({ task, currentUserId }: PowTaskItemProps) {
         setStopMiningFunc(null);
       }
     );
-    setStopMiningFunc(() => cancelFunc); // Store the cancellation function
+    setStopMiningFunc(() => cancelFunc); 
   };
 
   const handleStopMining = () => {
     if (stopMiningFunc) {
-      stopMiningFunc(); // This will trigger the onFailure callback in startMiningSimulation with a cancellation error
-      // UI updates (setIsMining(false), setMiningProgress(null), etc.) will be handled by the onFailure callback.
+      stopMiningFunc(); 
       toast({
         title: "Mining Cancelled",
         description: `Mining for task ${task.name} was stopped by user.`,
@@ -131,8 +131,6 @@ export function PowTaskItem({ task, currentUserId }: PowTaskItemProps) {
     }
   };
   
-  // Max attempts for progress bar (somewhat arbitrary, for visualization)
-  // A very high number, actual completion depends on difficulty & luck
   const MAX_VISUAL_ATTEMPTS = task.difficulty <= 3 ? 500000 : 
                               task.difficulty <= 4 ? 2000000 : 5000000;
 

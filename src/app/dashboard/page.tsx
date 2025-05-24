@@ -2,20 +2,13 @@
 import { PageWrapper } from "@/components/shared/PageWrapper";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { PowTaskItem } from "@/components/dashboard/PowTaskItem";
-import type { PoWTask } from "@/lib/types"; // Updated import
-import { Cpu, Zap, Target, ListChecks, Activity } from "lucide-react";
+import type { PoWTask, User } from "@/lib/types";
+import { Cpu, Zap, Target, ListChecks, Activity, AlertTriangle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { getUserStats, type UserStats } from "@/app/actions/users"; // Import UserStats type and getUserStats action
 
-// Mock data - in a real app, this would be fetched from a database
-const mockUserStats = {
-  id: "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d", // Valid UUID for CypherUser
-  username: "CypherUser",
-  points: 12500,
-  level: 7, // Added from User type
-  difficultyContribution: 7, // Renamed for clarity, represents user's typical mining difficulty
-  hashesResolvedAllTime: 782391, // More descriptive
-  activeMinersInShard: 42, 
-};
+// Mocked Current User ID - in a real app, this would come from auth context
+const MOCKED_CURRENT_USER_ID = "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"; // CypherUser's UUID
 
 const mockPowTasks: PoWTask[] = [
   { 
@@ -23,55 +16,51 @@ const mockPowTasks: PoWTask[] = [
     name: 'Alpha Block Verification', 
     description: 'Verify transaction batch #A4F2 using SHA-256 variant.', 
     reward: 100, 
-    difficulty: 3, // Numerical difficulty
+    difficulty: 3,
     targetHashPrefix: '000xxx...', 
-    dataToHash: 'alpha_block_A4F2_data_payload', // Example data
+    dataToHash: 'alpha_block_A4F2_data_payload',
     status: 'available',
-    createdAt: new Date(Date.now() - 3600000 * 2) // 2 hours ago
+    createdAt: new Date(Date.now() - 3600000 * 2) 
   },
   { 
     id: 'task2', 
     name: 'Sigma Data Chain', 
-    description: 'Mine the next link in the Sigma data integrity chain. Requires Scrypt algorithm (simulated as SHA-256).', 
+    description: 'Mine the next link in the Sigma data integrity chain.', 
     reward: 250, 
-    difficulty: 4, // Numerical difficulty
+    difficulty: 4,
     targetHashPrefix: '0000xx...',
     dataToHash: 'sigma_chain_link_integrity_check_v3',
-    status: 'in_progress', // Could be assigned to current user
-    assignedTo: mockUserStats.id,
-    createdAt: new Date(Date.now() - 3600000 * 1) // 1 hour ago
+    status: 'available',
+    createdAt: new Date(Date.now() - 3600000 * 1) 
   },
-  { 
-    id: 'task3', 
-    name: 'Genesis Contract Audit', 
-    description: 'Perform computational audit on Genesis smart contract parameters. Ethash variant (simulated as SHA-256).', 
-    reward: 50, 
-    difficulty: 2, // Numerical difficulty
-    targetHashPrefix: '00xxxx...',
-    dataToHash: 'genesis_contract_audit_params_secure_hash',
-    status: 'completed',
-    completedBy: mockUserStats.id,
-    solutionNonce: "12345",
-    timeToSolve: 120, // seconds
-    createdAt: new Date(Date.now() - 3600000 * 5) // 5 hours ago
-  },
-  { 
+   { 
     id: 'task4', 
     name: 'Quantum Resilience Test', 
-    description: 'Stress test network with quantum-resistant hash functions (simulated as SHA-256).', 
+    description: 'Stress test network with quantum-resistant hash functions.', 
     reward: 500, 
-    difficulty: 5, // Numerical difficulty. Note: 5 can be very slow for JS SHA256.
+    difficulty: 5, 
     targetHashPrefix: '00000x...',
     dataToHash: 'quantum_test_data_high_entropy_stream',
     status: 'available',
-    createdAt: new Date(Date.now() - 3600000 * 0.5) // 30 mins ago
+    createdAt: new Date(Date.now() - 3600000 * 0.5)
   },
 ];
 
 
-export default function DashboardPage() {
-  // In a real app, userName would come from session/auth context
-  const userName = mockUserStats.username;
+export default async function DashboardPage() {
+  const userStats: UserStats | null = await getUserStats(MOCKED_CURRENT_USER_ID);
+
+  if (!userStats) {
+    return (
+      <PageWrapper className="space-y-8 flex flex-col items-center justify-center">
+        <AlertTriangle className="h-16 w-16 text-destructive" />
+        <h1 className="text-2xl font-bold text-destructive">Error Fetching User Data</h1>
+        <p className="text-muted-foreground">Could not load dashboard. Please try again later.</p>
+      </PageWrapper>
+    );
+  }
+
+  const userName = userStats.username;
 
   return (
     <PageWrapper className="space-y-8">
@@ -87,28 +76,28 @@ export default function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard 
           title="Total Points" 
-          value={mockUserStats.points.toLocaleString()} 
+          value={userStats.points.toLocaleString()} 
           icon={Zap} 
-          description={`Level ${mockUserStats.level}`}
+          description={`Level ${userStats.level}`}
           iconColorClass="text-yellow-400"
         />
         <StatCard 
           title="Typical Difficulty" 
-          value={mockUserStats.difficultyContribution} 
+          value={userStats.difficultyContribution || 5} // Default if undefined
           icon={Target} 
-          description="Network Avg: 6.5" // This would be dynamic
+          description="User Avg." 
           iconColorClass="text-red-400"
         />
         <StatCard 
-          title="Hashes Resolved (All Time)" 
-          value={mockUserStats.hashesResolvedAllTime.toLocaleString()} 
+          title="Hashes Resolved (Est.)" 
+          value={userStats.hashesResolvedAllTime?.toLocaleString() || 'N/A'} 
           icon={Cpu} 
-          description="Session Peak: 1.2M H/s" // This would be dynamic
+          description="Session Peak: 1.2M H/s" 
           iconColorClass="text-blue-400"
         />
          <StatCard 
           title="Active Miners (Shard)" 
-          value={mockUserStats.activeMinersInShard} 
+          value={userStats.activeMinersInShard || 0} 
           icon={Activity} 
           description="On this shard"
           iconColorClass="text-green-400"
@@ -122,13 +111,12 @@ export default function DashboardPage() {
           <ListChecks className="h-7 w-7 text-accent mr-3" />
           <h2 className="text-2xl font-semibold text-glow-accent">Available Proof-of-Work Tasks</h2>
         </div>
-        {mockPowTasks.filter(task => task.status === 'available' || (task.status === 'in_progress' && task.assignedTo === mockUserStats.id)).length > 0 ? (
+        {mockPowTasks.filter(task => task.status === 'available' || (task.status === 'in_progress' && task.assignedTo === userStats.id)).length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {mockPowTasks
-              .filter(task => task.status === 'available' || (task.status === 'in_progress' && task.assignedTo === mockUserStats.id))
+              .filter(task => task.status === 'available' || (task.status === 'in_progress' && task.assignedTo === userStats.id))
               .map((task) => (
-              // Pass the current user ID for context, though it's mocked here
-              <PowTaskItem key={task.id} task={task} currentUserId={mockUserStats.id} />
+              <PowTaskItem key={task.id} task={task} currentUserId={userStats.id} />
             ))}
           </div>
         ) : (
