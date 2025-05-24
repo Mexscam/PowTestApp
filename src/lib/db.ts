@@ -99,12 +99,25 @@ async function seedInitialUsers(currentDb: Database<sqlite3.Database, sqlite3.St
 
   for (const userData of usersToSeed) {
     try {
-      const existingUser = await currentDb.get('SELECT id FROM users WHERE email = ? OR username = ? OR id = ?', [userData.email, userData.username, userData.id]);
-      if (!existingUser) {
+      const userById = await currentDb.get('SELECT id FROM users WHERE id = ?', userData.id);
+      
+      if (!userById) {
+        // User with this specific ID does not exist, so try to insert.
+        // First, check if the email or username is taken by a *different* user.
+        const conflictingUser = await currentDb.get(
+          'SELECT id FROM users WHERE (email = ? OR username = ?) AND id != ?', 
+          userData.email, userData.username, userData.id
+        );
+
+        if (conflictingUser) {
+          console.warn(`[DB] Seeding user ${userData.username} (ID: ${userData.id}): Email or username (${userData.email}/${userData.username}) already exists with a DIFFERENT ID (${conflictingUser.id}). Skipping this seed entry.`);
+          continue;
+        }
+
         const hashedPassword = await bcrypt.hash(userData.password, 10);
         await currentDb.run(
           'INSERT INTO users (id, username, email, passwordHash, points, level, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-          userData.id, // Use predefined ID
+          userData.id,
           userData.username,
           userData.email,
           hashedPassword,
@@ -113,14 +126,18 @@ async function seedInitialUsers(currentDb: Database<sqlite3.Database, sqlite3.St
           new Date().toISOString(),
           new Date().toISOString()
         );
-        console.log(`[DB] Seeded user: ${userData.username}`);
+        console.log(`[DB] Seeded user: ${userData.username} with ID ${userData.id}`);
+      } else {
+        // User with this ID already exists. We can optionally update them here if needed,
+        // but for this fix, ensuring they exist with the correct ID is the main goal.
+        // console.log(`[DB] User ${userData.username} (ID: ${userData.id}) already exists. Seed data not re-applied.`);
       }
     } catch (err) {
-      // Ignore unique constraint errors if user already exists from a partial seed or manual entry
-      if (err instanceof Error && (err.message.includes('SQLITE_CONSTRAINT: UNIQUE constraint failed: users.email') || err.message.includes('SQLITE_CONSTRAINT: UNIQUE constraint failed: users.username') || err.message.includes('SQLITE_CONSTRAINT: UNIQUE constraint failed: users.id'))) {
-        // console.log(`[DB] User ${userData.username} or email ${userData.email} already exists, skipping seed.`);
+      // Catch other potential errors, e.g., other unique constraints if the pre-check wasn't exhaustive
+      if (err instanceof Error && (err.message.includes('SQLITE_CONSTRAINT: UNIQUE constraint failed'))) {
+         console.warn(`[DB] Warning during seeding for ${userData.username} (ID: ${userData.id}): A unique constraint was violated (likely email or username already exists and pre-check missed it or race condition). Details: ${err.message}`);
       } else {
-        console.error(`[DB] Error seeding user ${userData.username}:`, err);
+        console.error(`[DB] Error seeding user ${userData.username} (ID: ${userData.id}):`, err);
       }
     }
   }
