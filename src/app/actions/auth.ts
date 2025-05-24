@@ -1,10 +1,16 @@
 
 'use server';
 
-import type { User } from '@/lib/types'; // Assuming you have a User type
+import type { User } from '@/lib/types';
+
+// Define an interface for our mock user store that includes a mock password
+interface MockUserEntry extends Omit<User, 'passwordHash'> {
+  mockPassword?: string; // Store plain text password for mock purposes
+}
 
 // Mock user data (in a real app, this would interact with a database)
-const MOCK_USERS: Record<string, Omit<User, 'passwordHash'>> = {
+// Initialize with the default user and their mock password
+const MOCK_USERS: Record<string, MockUserEntry> = {
   "user@nexus.io": {
     id: "user1",
     username: "CypherUser",
@@ -13,6 +19,7 @@ const MOCK_USERS: Record<string, Omit<User, 'passwordHash'>> = {
     level: 7,
     createdAt: new Date(),
     updatedAt: new Date(),
+    mockPassword: "password123", // Default user's password
   }
 };
 
@@ -22,16 +29,14 @@ export async function loginUser(formData: FormData) {
 
   console.log('[Server Action] Login attempt:', { email, password });
 
-  // Simulate database lookup & password check
-  // In a real app:
-  // 1. Fetch user by email from DB.
-  // 2. Compare provided password (hashed) with stored passwordHash.
-  // 3. If match, generate JWT or session token.
+  const userEntry = MOCK_USERS[email];
 
-  if (MOCK_USERS[email] && password === "password123") { // Super simple mock check
+  // Check if user exists and the provided password matches the stored mockPassword
+  if (userEntry && userEntry.mockPassword === password) {
     console.log('[Server Action] Login successful for:', email);
-    // In a real app, you'd set a cookie with JWT or session ID here
-    return { success: true, message: 'Login successful!', user: MOCK_USERS[email] };
+    // Exclude mockPassword from the user object sent to the client
+    const { mockPassword, ...userDetailsToReturn } = userEntry;
+    return { success: true, message: 'Login successful!', user: userDetailsToReturn };
   } else {
     console.log('[Server Action] Login failed for:', email);
     return { success: false, message: 'Invalid email or password.' };
@@ -45,17 +50,12 @@ export async function registerUser(formData: FormData) {
 
   console.log('[Server Action] Registration attempt:', { username, email, password });
 
-  // Simulate database insertion
-  // In a real app:
-  // 1. Check if email or username already exists.
-  // 2. Hash the password.
-  // 3. Store the new user in the database.
-
   if (MOCK_USERS[email]) {
     return { success: false, message: 'Email already registered.' };
   }
 
-  const newUser: Omit<User, 'passwordHash'> = {
+  // Create new user with the provided password stored as mockPassword
+  const newUser: MockUserEntry = {
     id: `user-${Date.now()}`, // simple unique ID
     username,
     email,
@@ -63,9 +63,12 @@ export async function registerUser(formData: FormData) {
     level: 1,
     createdAt: new Date(),
     updatedAt: new Date(),
+    mockPassword: password, // Store the chosen password
   };
   MOCK_USERS[email] = newUser; // Add to mock store
 
   console.log('[Server Action] Registration successful for:', newUser);
+  // Important: Do not send newUser.mockPassword to client here if you were to return the user object
   return { success: true, message: 'Registration successful! Please log in.' };
 }
+
