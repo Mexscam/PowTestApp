@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LayoutDashboard, LogOut, UserCircle, Settings, ShieldCheck, Trophy } from "lucide-react";
+import { LayoutDashboard, LogOut, UserCircle, Settings, ShieldCheck, Trophy, MessageSquare } from "lucide-react"; // Added MessageSquare
 import { useToast } from "@/hooks/use-toast";
 
 export function Header() {
@@ -41,7 +41,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <AppLogo />
-        <nav className="flex items-center gap-2 sm:gap-4">
+        <nav className="flex items-center gap-1 sm:gap-2"> {/* Reduced gap for more items */}
           <Button variant="ghost" asChild className="text-foreground/80 hover:text-primary hover:bg-primary/10 px-2 sm:px-3">
             <Link href="/dashboard">
               <LayoutDashboard className="mr-1 sm:mr-2 h-5 w-5" />
@@ -54,7 +54,12 @@ export function Header() {
               <span className="hidden sm:inline">Ranking</span>
             </Link>
           </Button>
-          {/* Add more nav links here if needed */}
+          <Button variant="ghost" asChild className="text-foreground/80 hover:text-primary hover:bg-primary/10 px-2 sm:px-3">
+            <Link href="/dashboard/chat">
+              <MessageSquare className="mr-1 sm:mr-2 h-5 w-5" />
+              <span className="hidden sm:inline">Chat</span>
+            </Link>
+          </Button>
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

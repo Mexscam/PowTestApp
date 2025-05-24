@@ -53,3 +53,11 @@ export interface MiningResult {
   attempts: number;
   timeTaken: number; // in seconds
 }
+
+export interface ChatMessage {
+  id: string;
+  userId: string;
+  username: string; // Denormalized for easier display
+  content: string;
+  timestamp: Date;
+}

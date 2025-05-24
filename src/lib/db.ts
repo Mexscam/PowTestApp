@@ -42,7 +42,7 @@ export async function getDbConnection() {
       `);
       console.log('[DB] Users table checked/created.');
       
-      // Trigger for updatedAt
+      // Trigger for updatedAt on users table
       await newDb.exec(`
         CREATE TRIGGER IF NOT EXISTS update_users_updatedAt
         AFTER UPDATE ON users
@@ -52,6 +52,19 @@ export async function getDbConnection() {
         END;
       `);
       console.log('[DB] Users updatedAt trigger checked/created.');
+
+      // Chat messages table
+      await newDb.exec(`
+        CREATE TABLE IF NOT EXISTS chat_messages (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          content TEXT NOT NULL,
+          timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE 
+        );
+      `);
+      console.log('[DB] Chat messages table checked/created.');
+
 
       await seedInitialUsers(newDb);
       db = newDb;
@@ -67,6 +80,7 @@ export async function getDbConnection() {
 async function seedInitialUsers(currentDb: Database<sqlite3.Database, sqlite3.Statement>) {
   const usersToSeed = [
     {
+      id: 'user1', // Predefined ID for consistent mocking
       username: 'CypherUser',
       email: 'user@nexus.io',
       password: 'password123',
@@ -74,6 +88,7 @@ async function seedInitialUsers(currentDb: Database<sqlite3.Database, sqlite3.St
       level: 7,
     },
     {
+      id: 'admin1', // Predefined ID
       username: 'Admin1',
       email: 'admin@nexus.io',
       password: 'Gabriel8',
@@ -84,12 +99,12 @@ async function seedInitialUsers(currentDb: Database<sqlite3.Database, sqlite3.St
 
   for (const userData of usersToSeed) {
     try {
-      const existingUser = await currentDb.get('SELECT id FROM users WHERE email = ? OR username = ?', [userData.email, userData.username]);
+      const existingUser = await currentDb.get('SELECT id FROM users WHERE email = ? OR username = ? OR id = ?', [userData.email, userData.username, userData.id]);
       if (!existingUser) {
         const hashedPassword = await bcrypt.hash(userData.password, 10);
         await currentDb.run(
           'INSERT INTO users (id, username, email, passwordHash, points, level, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-          uuidv4(),
+          userData.id, // Use predefined ID
           userData.username,
           userData.email,
           hashedPassword,
@@ -102,7 +117,7 @@ async function seedInitialUsers(currentDb: Database<sqlite3.Database, sqlite3.St
       }
     } catch (err) {
       // Ignore unique constraint errors if user already exists from a partial seed or manual entry
-      if (err instanceof Error && (err.message.includes('SQLITE_CONSTRAINT: UNIQUE constraint failed: users.email') || err.message.includes('SQLITE_CONSTRAINT: UNIQUE constraint failed: users.username'))) {
+      if (err instanceof Error && (err.message.includes('SQLITE_CONSTRAINT: UNIQUE constraint failed: users.email') || err.message.includes('SQLITE_CONSTRAINT: UNIQUE constraint failed: users.username') || err.message.includes('SQLITE_CONSTRAINT: UNIQUE constraint failed: users.id'))) {
         // console.log(`[DB] User ${userData.username} or email ${userData.email} already exists, skipping seed.`);
       } else {
         console.error(`[DB] Error seeding user ${userData.username}:`, err);

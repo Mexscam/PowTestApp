@@ -5,7 +5,7 @@ import SHA256 from 'crypto-js/sha256';
 import type { PoWTask, MiningProgress, MiningResult } from './types';
 
 const HASH_REPORT_INTERVAL = 100; // Report progress every N hashes
-const YIELD_INTERVAL = 500; // Yield to event loop every N hashes to prevent freezing
+const YIELD_INTERVAL = 250; // Yield to event loop every N hashes to prevent freezing (reduced from 500 for "lighter" feel)
 
 export async function startMiningSimulation(
   task: PoWTask,
