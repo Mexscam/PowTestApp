@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -13,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LayoutDashboard, LogOut, UserCircle, Settings, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, LogOut, UserCircle, Settings, ShieldCheck, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export function Header() {
@@ -21,8 +22,8 @@ export function Header() {
   const { toast } = useToast();
   // Mock user data - in a real app, this would come from auth context/state
   const isAuthenticated = true; // Assume user is logged in for dashboard header
-  const userName = "CypherUser";
-  const userEmail = "cypher@nexus.io";
+  const userName = "CypherUser"; // This should ideally come from user session
+  const userEmail = "cypher@nexus.io"; // This should ideally come from user session
 
   const handleLogout = () => {
     toast({
@@ -30,6 +31,7 @@ export function Header() {
       description: "You have been successfully logged out.",
     });
     // Simulate logout and redirect
+    // In a real app, you would clear session/token here
     setTimeout(() => {
       router.push('/login');
     }, 1000);
@@ -39,19 +41,25 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <AppLogo />
-        <nav className="flex items-center gap-4">
-          <Button variant="ghost" asChild className="text-foreground/80 hover:text-primary hover:bg-primary/10">
+        <nav className="flex items-center gap-2 sm:gap-4">
+          <Button variant="ghost" asChild className="text-foreground/80 hover:text-primary hover:bg-primary/10 px-2 sm:px-3">
             <Link href="/dashboard">
-              <LayoutDashboard className="mr-2 h-5 w-5" />
-              Dashboard
+              <LayoutDashboard className="mr-1 sm:mr-2 h-5 w-5" />
+              <span className="hidden sm:inline">Dashboard</span>
+            </Link>
+          </Button>
+          <Button variant="ghost" asChild className="text-foreground/80 hover:text-primary hover:bg-primary/10 px-2 sm:px-3">
+            <Link href="/dashboard/ranking">
+              <Trophy className="mr-1 sm:mr-2 h-5 w-5" />
+              <span className="hidden sm:inline">Ranking</span>
             </Link>
           </Button>
           {/* Add more nav links here if needed */}
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                  <Avatar className="h-9 w-9 border-2 border-primary">
+                <Button variant="ghost" className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-full">
+                  <Avatar className="h-8 w-8 sm:h-9 sm:w-9 border-2 border-primary">
                     <AvatarImage src={`https://placehold.co/100x100.png?text=${userName.substring(0,1)}`} alt={userName} data-ai-hint="abstract avatar" />
                     <AvatarFallback className="bg-primary text-primary-foreground">{userName.substring(0,2).toUpperCase()}</AvatarFallback>
                   </Avatar>
