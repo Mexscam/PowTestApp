@@ -31,7 +31,7 @@ export async function loginUser(formData: FormData) {
 
     if (passwordMatch) {
       console.log('[Server Action] Login successful for:', emailOrUsername);
-      const safeUser = mapDbUserToSafeUser(userRow);
+      const safeUser = await mapDbUserToSafeUser(userRow);
       return { success: true, message: 'Login successful!', user: safeUser };
     } else {
       console.log('[Server Action] Login failed: Password mismatch for', emailOrUsername);

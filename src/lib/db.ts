@@ -112,12 +112,13 @@ async function seedInitialUsers(currentDb: Database<sqlite3.Database, sqlite3.St
 }
 
 // Helper function to map database row to User type (excluding passwordHash)
-export function mapDbUserToSafeUser(dbUser: any): Omit<User, 'passwordHash'> {
-    if (!dbUser) return null as any; // Should not happen if called correctly
-    const { passwordHash, ...safeUser } = dbUser;
+export async function mapDbUserToSafeUser(dbUser: any): Promise<Omit<User, 'passwordHash'> | null> {
+    if (!dbUser) return null; 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash, ...safeUserFields } = dbUser;
     return {
-        ...safeUser,
-        createdAt: new Date(safeUser.createdAt),
-        updatedAt: new Date(safeUser.updatedAt),
+        ...safeUserFields,
+        createdAt: new Date(safeUserFields.createdAt),
+        updatedAt: new Date(safeUserFields.updatedAt),
     };
 }
