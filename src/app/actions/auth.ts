@@ -20,26 +20,38 @@ const MOCK_USERS: Record<string, MockUserEntry> = {
     createdAt: new Date(),
     updatedAt: new Date(),
     mockPassword: "password123", // Default user's password
+  },
+  "Admin1": { // Using username as key for simplicity, assuming it's unique for login
+    id: "adminUser1",
+    username: "Admin1",
+    email: "admin@nexus.io", // Assuming an email for the admin
+    points: 99999,
+    level: 99,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    mockPassword: "Gabriel8",
   }
 };
 
 export async function loginUser(formData: FormData) {
-  const email = formData.get('email') as string;
+  const emailOrUsername = formData.get('email') as string; // Can be email or username
   const password = formData.get('password') as string;
 
-  console.log('[Server Action] Login attempt:', { email, password });
+  console.log('[Server Action] Login attempt:', { emailOrUsername, password });
 
-  const userEntry = MOCK_USERS[email];
+  // Find user by email or username
+  const userEntry = MOCK_USERS[emailOrUsername] || Object.values(MOCK_USERS).find(u => u.username === emailOrUsername);
+
 
   // Check if user exists and the provided password matches the stored mockPassword
   if (userEntry && userEntry.mockPassword === password) {
-    console.log('[Server Action] Login successful for:', email);
+    console.log('[Server Action] Login successful for:', emailOrUsername);
     // Exclude mockPassword from the user object sent to the client
     const { mockPassword, ...userDetailsToReturn } = userEntry;
     return { success: true, message: 'Login successful!', user: userDetailsToReturn };
   } else {
-    console.log('[Server Action] Login failed for:', email);
-    return { success: false, message: 'Invalid email or password.' };
+    console.log('[Server Action] Login failed for:', emailOrUsername);
+    return { success: false, message: 'Invalid email/username or password.' };
   }
 }
 
@@ -50,8 +62,8 @@ export async function registerUser(formData: FormData) {
 
   console.log('[Server Action] Registration attempt:', { username, email, password });
 
-  if (MOCK_USERS[email]) {
-    return { success: false, message: 'Email already registered.' };
+  if (MOCK_USERS[email] || Object.values(MOCK_USERS).find(u => u.username === username)) {
+    return { success: false, message: 'Email or Username already registered.' };
   }
 
   // Create new user with the provided password stored as mockPassword
@@ -65,10 +77,10 @@ export async function registerUser(formData: FormData) {
     updatedAt: new Date(),
     mockPassword: password, // Store the chosen password
   };
-  MOCK_USERS[email] = newUser; // Add to mock store
+  MOCK_USERS[email] = newUser; // Add to mock store using email as key
+  // If you want to allow login by username for registered users as well, you might need a different structure or a secondary lookup
 
   console.log('[Server Action] Registration successful for:', newUser);
   // Important: Do not send newUser.mockPassword to client here if you were to return the user object
   return { success: true, message: 'Registration successful! Please log in.' };
 }
-
